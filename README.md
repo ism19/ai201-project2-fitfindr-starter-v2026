@@ -59,24 +59,39 @@
 
 ### `search_listings`
 
-- **What it does:**
+- **What it does:** 
+Searches the listings for items matching a description, size, and price limit
 - **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
+description(str)
+size (str)
+max_price (float)
 - **Returns:**
+A list of matching items as dicts in order of greatest match
 - **When it has nothing:**
+Returns an empty list 
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
+- **What it does:** 
+Suggests outfits for the user given the user's thrift find by matching pieces from their wardrobe or suggests general styling tips if wardrobe isn't shared
+- **Inputs:** 
+new_item (dict)
+wardrobe (dict)
 - **Returns:**
+Returns a string that describes the outfit suggestion for the new thrift find
 - **When it has nothing:**
+If no outfit ideas could be generated, a string explaining that no outfit ideas were generated for the new item is returned
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
+- **What it does:** Generates a social media caption for the new thrift find using the generated outfit description
+- **Inputs:** 
+outfit (str)
+new_item (dict)
 - **Returns:**
+Returns a 2-3 sentence caption describing the find in a natural way such as mood/style.
 - **When it has nothing:**
+If the caption comes as an empty response it returns a string that says no caption could be generated for the find. If the outfit is passed as an empty param, it tells the user to run suggest_outfit.
 
 ---
 
