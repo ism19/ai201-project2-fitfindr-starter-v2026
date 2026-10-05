@@ -41,6 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
+FitFindr helps someone thrifting to decide whether a thrift find works for them. The user types what they're looking like "vintage graphic tee under $30 size M". FitFindr searches the listings for the best match, then suggests one or two outfits that pair it with pieces from the user's wardrobe. Then it writes a short post caption for the find.
 
 
 ---
@@ -108,13 +109,13 @@ If the caption comes as an empty response it returns a string that says no capti
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message in `session["error"]` that names what was searched and what to loosen (raise the max price, drop the size, or use broader words), and stop without calling `suggest_outfit`. Otherwise, take the first result as `session["selected_item"]` and go to `suggest_outfit`, then `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex, in `agent.py::parse_query`. The price comes from phrases like "under $30", "max 40" or a bare "$25". The size is whatever follows the word "size" ("size M", "size S/M", "size US 8.5", "size W30 L30"). The description is what's left after removing those and filler like "looking for" or "I need". A size not preceded by "size" (e.g. "one size bucket hat") is not picked up and stays in the description.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** `query` → `parsed` (description, size, max_price) → `search_results` → `selected_item` → `outfit_suggestion` → `fit_card`. Each tool reads its input from the session and writes its result back. `error` is set only when the run stops early, and the later fields stay `None`.
 
 ---
 
@@ -189,15 +190,15 @@ Living in these vintage Levi's 501s lately—that perfect medium wash and knee f
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I wrote the helper functions for `search_listings` (`_keywords`, `_size_tokens`, `_size_matches`) and asked Claude for help getting the search working.
+- *What came back:* Claude found two bugs in my `_size_tokens`. My regex `r"\n([^)]*\)"` matched a newline instead of `(`, so parentheticals like "(oversized)" were never removed. And `.upper` was missing its `()`. It also suggested scoring keyword matches in the title twice as high as matches elsewhere.
+- *What I changed:* I fixed the bugs Claude pointed out.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Help writing the prompts for `suggest_outfit`with the case where the user hasn't shared a wardrobe.
+- *What came back:* Claude suggested two prompts. The empty-wardrobe one asks for general styling advice and tells the model not to pretend it knows what the user owns. The other lists the user's pieces and tells the model to use only those. It also suggested small helper functions to turn the item and wardrobe dicts into readable text for the prompt. Both system prompts started with "You are a thrift stylist."
+- *What I changed:* I changed "thrift stylist" to "clothing stylist". I also moved the helper functions above `suggest_outfit`.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
