@@ -25,9 +25,8 @@ Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
 **Why this target:**
-<!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
-     "my search is a plain keyword match and some phrasings will miss" is a
-     real answer. -->
+My search is a plain keyword match with no handling for plurals or synonyms, so a phrasing like "graphic tees" or "band shirt" can miss a listing that
+exists and the run stops early. 
 
 ---
 
@@ -37,8 +36,7 @@ Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
 **Why this target:**
-<!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
-     about this path? -->
+If there are 0 matches for outfits, the agent will not branch to the second tool at all.
 
 ---
 
@@ -54,10 +52,11 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+Across 5 runs with matching queries, the `id` of `session["selected_item"]`
+equals the `id` of `session["search_results"][0]`, equals the `id` of the item the trace shows going into `suggest_outfit`. 5 of 5 tries.
 
 **Why this target:**
-
+Anything below 5 of 5 isn't acceptable because it should not vary- the same item should be passed along and if it's not, there's a problem in the code I wrote not in the generated answer.
 
 
 ---
@@ -75,11 +74,10 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
-
+fit cards are 2–4 sentences, include the item's price (`$38` or `$38.0` both count) and the platform name. 4 of 5
 
 **Why this target:**
-
-
+The prompt specifically asks the model to generate a caption with 2-4 sentences, including the price and platform, so it should generally meet all 3 of those criteria. But it might be longer than it's supposed to be.
 
 ---
 
@@ -92,11 +90,10 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+For all queries that state a price, every item in the search results costs at or below that price and the size matches the wanted size. 5 of 5
 
 **Why this target:**
-
-
+If the price ceiling or sizing isn't respected, the search tool is broken because it's not giving what the user asked for. All 5 need to pass.
 
 ---
 
