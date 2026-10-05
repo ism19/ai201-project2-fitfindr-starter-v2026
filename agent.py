@@ -13,6 +13,8 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
+
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
@@ -106,10 +108,103 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         than a stack trace. The import is already at the top of this file.
     """
     session = new_session(query, wardrobe)
+    session["parsed"] = parse_query(query)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    # Each pass runs one step, then looks at what it returned to pick the next.
+    next_step = "search"
+    count = 0
+    while next_step != "done":
+        count += 1
+        trace.check_iterations(count)
+
+        if next_step == "search":
+            parsed = session["parsed"]
+            session["search_results"] = search_listings(
+                parsed["description"], parsed["size"], parsed["max_price"]
+            )
+            # THE BRANCH: nothing found -> say what to change and stop
+            if not session["search_results"]:
+                session["error"] = _no_results_message(parsed)
+                next_step = "done"
+            else:
+                session["selected_item"] = session["search_results"][0]
+                next_step = "suggest"
+
+        elif next_step == "suggest":
+            session["outfit_suggestion"] = suggest_outfit(
+                session["selected_item"], session["wardrobe"]
+            )
+            next_step = "fit_card"
+
+        elif next_step == "fit_card":
+            session["fit_card"] = create_fit_card(
+                session["outfit_suggestion"], session["selected_item"]
+            )
+            next_step = "done"
+
     return session
+
+
+# ── query parsing ─────────────────────────────────────────────────────────────
+
+_PRICE_RE = re.compile(
+    r"(?:under|below|less than|max|up to|at most)\s*\$?\s*(\d+(?:\.\d+)?)"  # "under $30", "max 30"
+    r"|\$\s*(\d+(?:\.\d+)?)",                                               # bare "$30"
+    re.IGNORECASE,
+)
+_SIZE_RE = re.compile(
+    r"\bsize\s+(one size|us\s*\d+(?:\.\d+)?|w\d+(?:\s*l\d+)?|[a-z]{1,3}(?:/[a-z]{1,3})?)\b",
+    re.IGNORECASE,
+)
+_FILLER_RE = re.compile(
+    r"\b(i'?m|i am|looking for|i want|i need|find me|show me|something|anything|please|in)\b",
+    re.IGNORECASE,
+)
+
+
+def parse_query(query: str) -> dict:
+    """
+    Pull description, size, and max_price out of a plain-language query with regex.
+
+        "vintage graphic tee under $30, size M"
+            -> {"description": "vintage graphic tee", "size": "M", "max_price": 30.0}
+
+    size and max_price are None when the query doesn't mention them.
+    """
+    text = query or ""
+
+    max_price = None
+    price_match = _PRICE_RE.search(text)
+    if price_match:
+        max_price = float(price_match.group(1) or price_match.group(2))
+        text = text.replace(price_match.group(0), " ")
+
+    size = None
+    size_match = _SIZE_RE.search(text)
+    if size_match:
+        size = size_match.group(1).upper()
+        text = text.replace(size_match.group(0), " ")
+
+    text = _FILLER_RE.sub(" ", text)
+    description = " ".join(re.sub(r"[^\w\s'-]", " ", text).split())  # drop punctuation, tidy spaces
+    return {"description": description, "size": size, "max_price": max_price}
+
+
+def _no_results_message(parsed: dict) -> str:
+    """Name what the user searched for and what they could loosen."""
+    searched = f"'{parsed['description']}'" if parsed["description"] else "your search"
+    if parsed["size"]:
+        searched += f" in size {parsed['size']}"
+    if parsed["max_price"] is not None:
+        searched += f" under ${parsed['max_price']:g}"
+
+    tips = []
+    if parsed["max_price"] is not None:
+        tips.append("raise your max price")
+    if parsed["size"]:
+        tips.append("drop the size filter")
+    tips.append("try broader words (e.g. 'dress' instead of 'ballgown')")
+    return f"No listings matched {searched}. Try to " + ", or ".join(tips) + "."
 
 
 # ── running it directly ───────────────────────────────────────────────────────
