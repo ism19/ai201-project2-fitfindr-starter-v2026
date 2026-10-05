@@ -134,19 +134,46 @@ $ python app.py ask '...'
 
 **The three tools, tested one at a time**
 
-```
-$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+`search_listings`: returns tees first and nothing over $30. Weaker matches that only mention "tee" in their description rank last.
 
 ```
+$ python -c "from tools import search_listings; print([(x['title'], x['size'], x['price']) for x in search_listings('graphic tee', max_price=30)])"
+
+[('Graphic Tee — 2003 Tour Bootleg Style', 'L', 24.0), ('Y2K Baby Tee — Butterfly Print', 'S/M', 18.0), ('Vintage Band Tee — Faded Grey', 'L', 19.0), ('Vintage Graphic Hoodie — Faded Black', 'L', 26.0), ('Mesh Long-Sleeve Top — Black', 'S/M', 15.0), ('Low-Rise Cargo Pants — Khaki', 'W29', 27.0)]
+```
+
+`suggest_outfit`: with the example wardrobe, every piece it names is one the user owns.
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
 
+**Outfit 1: Casual Streetwear**
+- **New Item:** Vintage Levi's 501 Jeans
+- **Owned Pieces:** White ribbed tank top, Vintage black denim jacket, Chunky white sneakers, Black crossbody bag
+
+**Why it works:** The white ribbed tank tucked into the medium-wash 501s creates a classic, effortless base. Layering the slightly cropped vintage black denim jacket adds edge, while chunky white sneakers and the black crossbody bag tie the vintage streetwear aesthetic together seamlessly.
+
+***
+
+**Outfit 2: Cozy & Relaxed**
+- **New Item:** Vintage Levi's 501 Jeans
+- **Owned Pieces:** Oversized grey crewneck sweatshirt, Brown leather belt, Black combat boots
+
+**Why it works:** Tucking the front of the oversized grey crewneck into the 501s balances the volume of the top with the straight-leg fit of the denim. The brown leather belt adds a polished detail, and black combat boots ground the relaxed look with a touch of toughness.
 ```
 
-```
-$ python -c "from tools import create_fit_card; ..."
+`create_fit_card`: run three times on the same item with the cache off (`AI201_CACHE=0`). The three captions are different, so TEMPERATURE (0.9) is doing its job. With the cache on, all three came back word-for-word identical.
 
+```
+$ AI201_CACHE=0 python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+
+Nothing beats finding the holy grail of denim—these vintage Levi's 501s have the absolute best fading at the knees. I kept it classic for the fit today, just throwing them on with some fresh white sneakers for that effortless 90s streetwear vibe. Snagged this exact pair on depop for $38 and I honestly might never take them off.
+
+$ (run 2)
+Scored these vintage Levi's 501s on depop for just $38 and I'm honestly obsessed with the knee fading. Keeping it super effortless today by pairing them with crisp white sneakers for that ultimate 90s running-errands vibe.
+
+$ (run 3)
+Living in these vintage Levi's 501s lately—that perfect medium wash and knee fading give off the ultimate effortless streetwear vibe. Just kept it classic today with a crisp white tee and my go-to beat-up sneakers. Snagged them on Depop for just $38 and I honestly don't think I'll ever take them off.
 ```
 
 ---
