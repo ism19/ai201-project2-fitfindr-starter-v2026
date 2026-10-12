@@ -59,6 +59,15 @@ SCENARIOS = [
         "wardrobe": "example",
         "criterion": 5,
     },
+    {
+        # Criterion 5 — price and size respected, with a numeric shoe size.
+        # Listings store shoe sizes as "US 8", so "size 8" has to reach the
+        # search as a size, not as a keyword.
+        "name": "search respects price and numeric size",
+        "query": "sneakers size 8 under $50",
+        "wardrobe": "example",
+        "criterion": 5,
+    },
 ]
 
 WARDROBES = ("example", "empty")

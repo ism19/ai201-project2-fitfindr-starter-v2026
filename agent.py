@@ -166,7 +166,7 @@ _PRICE_RE = re.compile(
     re.IGNORECASE,
 )
 _SIZE_RE = re.compile(
-    r"\bsize\s+(one size|us\s*\d+(?:\.\d+)?|w\d+(?:\s*l\d+)?|[a-z]{1,3}(?:/[a-z]{1,3})?)\b",
+    r"\bsize\s+(one size|us\s*\d+(?:\.\d+)?|w\d+(?:\s*l\d+)?|\d+(?:\.\d+)?|[a-z]{1,3}(?:/[a-z]{1,3})?)\b",
     re.IGNORECASE,
 )
 _FILLER_RE = re.compile(
@@ -196,6 +196,8 @@ def parse_query(query: str) -> dict:
     size_match = _SIZE_RE.search(text)
     if size_match:
         size = size_match.group(1).upper()
+        if re.fullmatch(r"\d+(?:\.\d+)?", size):
+            size = f"US {size}"  # listings store shoe sizes as "US 8"
         text = text.replace(size_match.group(0), " ")
 
     text = _FILLER_RE.sub(" ", text)

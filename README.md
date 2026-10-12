@@ -225,6 +225,9 @@ Living in these vintage Levi's 501s lately—that perfect medium wash and knee f
 | 3. Item in session matches item passed on | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
 | 4. Fit card 2-4 sentences, includes price and platform | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
 | 5. Every result matches size and is at or below price | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+| 5. Same, numeric size (`sneakers size 8 under $50`) | 5 of 5 | FAIL | FAIL | FAIL | FAIL | FAIL | MISSED 0/5 |
+
+Row 5b was added after the diagnosis and run on the code before the fix.
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:
@@ -457,24 +460,56 @@ full. -->
 
 **What I changed:**
 
+One change, in agent.py::parse_query. The size regex now also accepts a number after "size" (size 8), and that number is turned into US 8, which is how the listings store sizes.
+
 **Which failure it was meant to fix:**
+
+Criterion 5, the failure my diagnosis named. "size 8" wasn't recognised as a size, so size came out as None, the size filter never ran, and "size 8" stayed in the description as keywords. Before the fix:
+
+```
+[1] parse_query
+      in:  sneakers size 8 under $50
+      out: {'description': 'sneakers size 8', 'size': None, 'max_price': 50.0}
+[2] search_listings (VIA MCP)
+      in:  {'description': 'sneakers size 8', 'size': None, 'max_price': 50.0}
+      out: 4 items: Platform Sneakers — White Chunky Sole, Low-Top Canvas Sneakers — Off-White, Mesh Long-Sleeve Top — Black … +1 more
+```
+
+The 4 results were Platform Sneakers (US 8), Low-Top Canvas Sneakers (US 9), Mesh Long-Sleeve Top (S/M) and Bucket Hat (One Size), so 2 of
+the 4 broke the size rule in every try.
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Full three-tool run returns a fit card | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+| 2. Empty search stops before tool 2 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+| 3. Item in session matches item passed on | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+| 4. Fit card 2-4 sentences, includes price and platform | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+| 5. Every result matches size and is at or below price | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+| 5b. Same, numeric size | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET 5/5 |
+
+After the fix:
+
+```
+[1] parse_query
+      in:  sneakers size 8 under $50
+      out: {'description': 'sneakers', 'size': 'US 8', 'max_price': 50.0}
+[2] search_listings (VIA MCP)
+      in:  {'description': 'sneakers', 'size': 'US 8', 'max_price': 50.0}
+      out: 1 items: Platform Sneakers — White Chunky Sole
+      →    1 match(es)
+```
 
 **Did it help, and how do I know:**
 
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+Yes. Row 5b went from MISSED 0/5 to MET 5/5. "size 8" now reaches the search
+as US 8, and the only result is the US 8 sneakers at $48. The US 9 sneakers, the S/M top and the One Size hat are gone. The hat disappeared because "size" and "8" are no longer searched as keywords.
 
+Nothing else broke. Rows 1–5 are MET 5/5 in both runs.
 
+What it doesn't fix:
+- One shared keyword is still enough for a listing to match.
 
 ---
 
@@ -484,7 +519,20 @@ full. -->
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
 
+**1. One shared keyword is enough for a match (`tools.py::search_listings`).**
+`unicorn hair jacket` returns 4 jackets instead of stopping, because "jacket" matches. Those results aren't empty, so the empty-search branch never runs, and the user gets a track jacket.
+The same rule lets a leather belt and a bucket hat into `vintage tee`, and picks the track jacket over the denim vest for `denim jacket`.
 
+*What I'd do:* only count a listing as a match if it shares most of the description's keywords, not just one, and add a second branch that tells the
+user when part of their query matched nothing.
+
+*Why I stopped:* the improvement was limited to one change. Changing the match rule would also change the results for every scenario, so it needs its own before and after run.
+
+**4. An empty description isn't caught.**
+`something under $40` parses to `description: ''` and returns nothing. The message then says "raise your max price", which won't help, because the problem is that the query didn't name an item.
+
+*What I'd do:* check for an empty description before searching and ask the
+user what they're looking for.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 
