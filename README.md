@@ -282,13 +282,39 @@ that produced it:
 **Happy path**
 
 ```
-
+$ python app.py ask 'vintage graphic tee under $30' --trace
+[1] parse_query
+      in:  vintage graphic tee under $30
+      out: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+[2] search_listings (VIA MCP)
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 10 items: Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey, Vintage Graphic Hoodie — Faded Black … +7 more
+      →    10 match(es)
+[3] select_item
+      out: Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+[4] suggest_outfit
+      in:  Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+      out: **Outfit 1: 90s Grunge Streetwear** *   **New item:** Graphic Tee *   **Owned pieces:** Baggy straight-leg jea…
+[5] create_fit_card
+      in:  Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+      out: Finally scored this 2003 tour bootleg tee for $24 on Depop and I’m obsessed with how soft and perfectly faded …
 ```
 
 **Empty search**
 
 ```
+$ python app.py ask 'invisible cloak' --trace
+[1] parse_query
+      in:  invisible cloak
+      out: {'description': 'invisible cloak', 'size': None, 'max_price': None}
+[2] search_listings (VIA MCP)
+      in:  {'description': 'invisible cloak', 'size': None, 'max_price': None}
+      out: [] (empty)
+      →    0 match(es)
+[3] branch
+      →    search returned []: stopping here before suggest outfit
 
+  No listings matched 'invisible cloak'. Try to use broader words (e.g. 'dress' instead of 'ballgown').
 ```
 
 **On the MCP move:** <!-- what changed in your code, and whether anything
