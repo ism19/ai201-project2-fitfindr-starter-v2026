@@ -35,18 +35,30 @@ SCENARIOS = [
         "wardrobe": "empty",
         "criterion": None,
     },
-    # TODO: add what your criteria 3, 4 and 5 need.
-    #
-    # Set "criterion" to the number in criteria.md that the scenario tests.
-    # "criterion": None means a diagnostic run — useful to have, but it isn't
-    # one of your five, and run_eval.py marks it as such in the table.
-    #
-    # For a state criterion, any normal query works — what you're checking is
-    # what ends up in the session, not what the user typed.
-    #
-    # For a fit-card criterion, you probably want the SAME query listed more
-    # than once, or several different items, depending on what your criterion
-    # actually says.
+    {
+        # Verify if correct item is passed. Compare the title of
+        # search_results[0], select_item, and what went into 
+        # suggest_outfit in the trace.
+        "name": "selected item passes through unchanged",
+        "query": "denim jacket size M under $50",
+        "wardrobe": "example",
+        "criterion": 3,
+    },
+    {
+        # Check if fit card has 2-4 sentences,
+        # the price, and the platform.
+        "name": "fit card has price and platform",
+        "query": "vintage tee size M under $25",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        # Criterion 5 — price and size respected, with a letter size.
+        "name": "search respects price and letter size",
+        "query": "vintage tee size M under $25",
+        "wardrobe": "example",
+        "criterion": 5,
+    },
 ]
 
 WARDROBES = ("example", "empty")
