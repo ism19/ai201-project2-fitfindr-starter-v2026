@@ -19,6 +19,7 @@ import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+from mcp_client import call_tool
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -109,8 +110,8 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
     session["parsed"] = parse_query(query)
+    trace.step("parse_query", inputs=query, returned=str(session["parsed"]))
 
-    # Each pass runs one step, then looks at what it returned to pick the next.
     next_step = "search"
     count = 0
     while next_step != "done":
@@ -119,27 +120,39 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         if next_step == "search":
             parsed = session["parsed"]
-            session["search_results"] = search_listings(
-                parsed["description"], parsed["size"], parsed["max_price"]
-            )
-            # THE BRANCH: nothing found -> say what to change and stop
+            # session["search_results"] = search_listings(
+            #     parsed["description"], parsed["size"], parsed["max_price"]
+            # )
+            results = call_tool("search_listings", {
+                "description": parsed["description"],
+                "size": parsed["size"],
+                "max_price": parsed["max_price"]
+            })
+            session["search_results"] = results
+            trace.step("search_listings (VIA MCP)", inputs=str(parsed), returned=session["search_results"],
+                       note=f"{len(session['search_results'])} match(es)")
+            
             if not session["search_results"]:
                 session["error"] = _no_results_message(parsed)
+                trace.step("branch", note="search returned []: stopping here before suggest outfit")
                 next_step = "done"
             else:
                 session["selected_item"] = session["search_results"][0]
+                trace.step("select_item", returned=session["selected_item"])
                 next_step = "suggest"
 
         elif next_step == "suggest":
             session["outfit_suggestion"] = suggest_outfit(
                 session["selected_item"], session["wardrobe"]
             )
+            trace.step("suggest_outfit", inputs=session["selected_item"], returned=session["outfit_suggestion"])
             next_step = "fit_card"
 
         elif next_step == "fit_card":
             session["fit_card"] = create_fit_card(
                 session["outfit_suggestion"], session["selected_item"]
             )
+            trace.step("create_fit_card", inputs=session["selected_item"], returned=session["fit_card"])
             next_step = "done"
 
     return session
@@ -203,7 +216,7 @@ def _no_results_message(parsed: dict) -> str:
         tips.append("raise your max price")
     if parsed["size"]:
         tips.append("drop the size filter")
-    tips.append("try broader words (e.g. 'dress' instead of 'ballgown')")
+    tips.append("use broader words (e.g. 'dress' instead of 'ballgown')")
     return f"No listings matched {searched}. Try to " + ", or ".join(tips) + "."
 
 
