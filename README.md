@@ -442,12 +442,12 @@ $ python app.py ask 'invisible cloak' --trace
   No listings matched 'invisible cloak'. Try to use broader words (e.g. 'dress' instead of 'ballgown').
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+**On the MCP move:** 
 
+In mcp_server.py I registered search_listings as an MCP tool. It's a wrapper with typed inputs and a description, and it calls search_listings. In agent.py::run_agent I replaced the direct call with call_tool("search_listings", {...}) and renamed the trace step search_listings (VIA MCP).
 
+The results didn't change. For "vintage graphic tee under $30" the direct call and the MCP call return the same list of 10 dicts, and for
+designer ballgown size XXS under $5 both return [], so the empty-search branch still works.
 
 ---
 
