@@ -367,14 +367,24 @@ Bucket Hat — Reversible, Brown Plaid          size='One Size'                 
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Full three-tool run returns a fit card | 4 of 5 | MET (5/5) | All 5 tries ran search_listings, suggest_outfit and createda fit card. |
+| 2 | Empty search stops before tool 2 | 5 of 5 | MET (5/5) | All 5 tries stopped after search_listings. |
+| 3 | Selected item passes through unchanged | 5 of 5 | MET (5/5) | In all 5 tries, the first title from search_listings, the select_item title, and the suggest_outfit input title are the same: 90s Track Jacket |
+| 4 | Fit card is 2–4 sentences with price and platform | 4 of 5 | MET (5/5) | All 5 cards are 2–3 sentences, and mention "$18" and "Depop". |
+| 5 | Every result matches the size and is at or below the price | 5 of 5 | MET (5/5) | All are size M, S/M or One Size and $12–$25 with a $25 limit. |
 
 **Diagnoses**
 
+I missed nothing: all five criteria met their targets in 5 of 5 tries.
+
+Some of the targets were low though.
+
+- **Criteria 2, 3 and 5 could only fail through a code bug.** `parse_query` and `search_listings` don't call the model, so the same query gives the same result every try. Five tries of one fixed query is really one test repeated five times.
+- **Criteria 1 and 4 allowed a miss (4 of 5) that never came close to happening.** Every fit card across all 25 completed tries had 2–3 sentences, the price and the platform. Criterion 4 should be 5 of 5.
+- **Numeric sizes are dropped.** In `black boots size 8 under $60`, `parse_query`'s size regex only recognises letter sizes, `US 8`, `W30` and "one size". "size 8" stays in the description as keywords, `size` is `None`, and the search returns tops and hoodies.
+- **One keyword is enough for a match.** `unicorn hair jacket` returned a track jacket instead of stopping, because "jacket" matched. `vintage tee` returned a belt and a bucket hat because of "vintage". `denim jacket` picked the track jacket over the denim vest.
+
+**Criterion I'd tighten: 5.** It says "every result matches the size", but I only tested a letter size. A tighter version would test a numeric size too (`size 8`).
 
 
 ---
